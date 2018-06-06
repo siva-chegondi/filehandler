@@ -2,27 +2,33 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
-	"github.com/smartsiva/filehandler/file"
+	"github.com/smartsiva/filehandler/store"
 )
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
 	multipartfile, _, err := r.FormFile("file_key")
-	defer multipartfile.Close()
 	if ( err != nil) {
 		fmt.Fprintf(w, "\n%s", err)
 		return
 	}
+	defer multipartfile.Close()
 
-	f, _ := file.New(multipartfile)
-	fmt.Fprintf(w, "%s", f.Upload())
+	_, err = store.NewMinio("smarttest", multipartfile)
+	if err != nil {
+		log.Fatal("Error occured ", err)
+		return
+	}
+	// minioFile.Upload()
 }
 
 func loadFile(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Code to load your file")
 }
 
 func main() {
-
+	
 	// set all handlers of server
 	http.HandleFunc("/upload", uploadFile)
 	http.HandleFunc("/load", loadFile)
