@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,12 +37,12 @@ func loadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	fileData, err := minioFile.Download("smartbucket")
 	if err != nil {
-		fmt.Println("Error 1 ", err)
+		fmt.Println("Error downloading your file ", err)
 		return
 	}
 	w.Header().Set("Content-Type", "image/jpg")
-	w.Header().Set("Content-Length", "35000")
-	w.Write(fileData)
+	io.Copy(w, fileData)
+	defer fileData.Close()
 }
 
 func main() {

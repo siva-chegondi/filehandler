@@ -1,7 +1,6 @@
 package store
 
 import (
-	"io"
 	"log"
 	"mime/multipart"
 	"github.com/minio/minio-go"
@@ -17,7 +16,7 @@ type MinioFile struct {
 //TODO 	Hard coding of credentials is bad way of practicing,
 		prefer other way with respect to your architecture
 
-Replace these credentials your S3 compatible storage server
+Replace these credentials with your S3 compatible storage server
 */
 var (
 	endpoint = "play.minio.io:9000"
@@ -48,9 +47,9 @@ func NewMinio(objectName string, file multipart.File) (*MinioFile, error) {
 func bucket(client *minio.Client, bucketName string) (error, bool) {
 	status, err := client.BucketExists(bucketName)
 	if err == nil && !status {
-		// instead of storing in environment variable
+		// instead of storing in environment variable, if possible
 		// use other way depending on your architecture
-		if client.MakeBucket(bucketName, "us-east-1") != nil {
+		if client.MakeBucket(bucketName, os.Getenv("region")) != nil {
 			log.Fatal("Error creating bucket", err)
 		}
 	}
@@ -63,17 +62,15 @@ func bucket(client *minio.Client, bucketName string) (error, bool) {
 * @public
 */
 func (minioFile *MinioFile) Upload(bucketName string) (string) {
-	if err, status := bucket(minioFile.client, bucketName); err != nil {
-		if !status && err != nil {
-			log.Println("Error ", err)
-			return "Internal Error of uploading your file"
-		}
+	if err, status := bucket(minioFile.client, bucketName); err != nil && !status {
+		log.Println("Error ", err)
+		return "Internal Error of uploading your file"
+	}
 
-		if _, err = minioFile.client.PutObject(bucketName, minioFile.objectName, minioFile.object, -1, minio.PutObjectOptions{ContentType: "image/jpeg"});
-			 err != nil {
-			log.Println("Error in uploading ", err)
-			return "Failed to upload your file"
-		}
+	_, err := minioFile.client.PutObject(bucketName, minioFile.objectName, minioFile.object, -1, minio.PutObjectOptions{ContentType: "image/jpeg"})
+	if err != nil {
+		log.Println("Error in uploading ", err)
+		return "Failed to upload your file"
 	}
 	return "File Uploaded Successfully!"
 }
@@ -82,18 +79,6 @@ func (minioFile *MinioFile) Upload(bucketName string) (string) {
 * Downloading file from storage server
 * @public
 */
-func (minioFile *MinioFile) Download(bucketName string) ([]byte, error) {
-	fileObject, err := minioFile.client.GetObject(bucketName, minioFile.objectName, minio.GetObjectOptions{})
-	var fileData = make([]byte, 35000) // starting with 10kb
-	var offset = int64(0)
-	for err == nil {
-		n, err := fileObject.ReadAt(fileData, offset)
-		offset += int64(n)
-		if err == io.EOF || err != nil {
-			break
-		}
-	}
-	defer fileObject.Close()
-	
-	return fileData, err
+func (minioFile *MinioFile) Download(bucketName string) (*minio.Object, error) {
+	return minioFile.client.GetObject(bucketName, minioFile.objectName, minio.GetObjectOptions{})
 }
