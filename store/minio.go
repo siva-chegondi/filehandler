@@ -1,6 +1,7 @@
 package store
 
 import (
+	"os"
 	"log"
 	"mime/multipart"
 	"github.com/minio/minio-go"
