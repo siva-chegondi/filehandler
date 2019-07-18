@@ -1,10 +1,11 @@
 package main
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+
 	"github.com/smartsiva/filehandler/store"
 )
 
@@ -12,14 +13,14 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	// handle submitted form and parse uploaded file
 	// FormFile internally will call ParseMultipartForm
 	multipartfile, _, err := r.FormFile("file_key")
-	if ( err != nil) {
+	if err != nil {
 		fmt.Fprintf(w, "\n%s", err)
 		return
 	}
 	defer multipartfile.Close()
 
 	// create minio file instance with uploaded file
-	minioFile, err := store.NewMinio("tempname" ,multipartfile)
+	minioFile, err := store.NewMinio("tempname", multipartfile)
 	if err != nil {
 		log.Fatal("Error occured ", err)
 		return
@@ -46,7 +47,7 @@ func loadFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	
+
 	// set all handlers of server
 	http.HandleFunc("/upload", uploadFile)
 	http.HandleFunc("/load", loadFile)
